@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة لغتي العربية - امتحان النحو</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background-color: #f8fafc; 
+        }
+        .animate-fade-in { 
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        /* Custom Checkbox Hidden */
+        input[type="radio"] { display: none; }
+    </style>
+</head>
+<body class="text-slate-900 selection:bg-indigo-200">
+
+    <div id="app-root" class="min-h-screen relative pb-20">
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+            <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3 cursor-pointer transition-transform hover:scale-105" onclick="setGameState('intro')">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-2xl shadow-md">ض</div>
+                    <span class="font-black text-2xl tracking-tight text-slate-800">لغتي <span class="text-indigo-600">العربية</span></span>
+                </div>
+                <div id="header-score" class="hidden">
+                    <div class="flex items-center gap-2 text-sm font-extrabold bg-gradient-to-l from-amber-100 to-yellow-50 text-amber-800 px-4 py-2 rounded-full border border-amber-300 shadow-sm">
+                        <i data-lucide="award" class="w-4 h-4 text-amber-600"></i> أعلى نتيجة: %<span id="header-highest-score"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" class="max-w-6xl mx-auto px-4 py-8 relative"></main>
+    </div>
+
+    <script>
+        // بنك الأسئلة الشامل (160 سؤال)
+        const questionBank = [
+            { q: "أي الجمل الآتية تشتمل على ألف الوصل وهمزة القطع؟", options: ["أحب وطني وأسعى إلى تطويره", "العفو من شيم الكبار", "بالعلم تعلو الشعوب وتسود", "أول الحزم المشورة"], correct: 0 },
+            { q: "أي فعل من الأفعال الآتية مبدوء بهمزة قطع؟", options: ["استمر", "ارتقى", "انتفى", "أفكر"], correct: 3 },
+            { q: "«أيمن الله لانصرن ألحق». ما الجملة التي ورد فيها تصويب أخطاء الجملة؟", options: ["أيمن الله الأنصرن ألحق", "ايمن الله لانصرن ألحق", "ايمن الله الأنصرن الحق", "أيمن الله لأنصرن الحق"], correct: 3 },
+            { q: "«ازرع الخير، وأكرم الضيف». صَنَّف الفعلين من حيث نوع الهمزة:", options: ["أمر الثلاثي مبدوء بألف وصل، أمر الرباعي مبدوء بهمزة قطع", "أمر الثلاثي مبدوء بهمزة قطع، أمر الرباعي مبدوء بألف وصل", "ماض ثلاثي مبدوء بألف وصل، ماض رباعي مبدوء بألف وصل", "ماض ثلاثي مبدوء بهمزة قطع، ماض رباعي مبدوء بهمزة قطع"], correct: 0 },
+            { q: "ينتصر الحق على الباطل. ما الصورة الصحيحة للفعل عند تحويله إلى ماضٍ؟", options: ["إنْتَصَرَ", "انْتَصَرَ", "ناصر", "نصر"], correct: 1 },
+            { q: "«من استمسك بالحق فاز». لماذا كُتِبَتْ كلمة «استمسك» بألف وصل؟", options: ["لأنها أمر السداسي", "لأنها ماض سداسي", "لأنها مصدر السداسي", "لأنها ماض خماسي"], correct: 1 },
+            { q: "كلمة «إلا» بهمزة قطع؟", options: ["لأنها مصدر", "لأنها فعل", "لأنها حرف", "لأنها اسم"], correct: 2 },
+            { q: "«امنح أخاك الثقة». لماذا كُتِبَتْ كلمة «امنح» بألف وصل؟", options: ["لأنها مصدر الثلاثي", "لأنها ماض ثلاثي", "لأنها أمر الرباعي", "لأنها أمر الثلاثي"], correct: 3 },
+            { q: "«يُخفف الدواء آلام المريض». رسم المد على الألف في «آلام» لأن الكلمة:", options: ["تبدأ بهمزتين؛ الأولى مفتوحة والثانية ساكنة", "تبدأ بألف وصل", "تبدأ بهمزة قطع", "تبدأ بهمزة بعدها ألف"], correct: 0 },
+            { q: "لماذا جاءت الهمزة المتوسطة في كلمة «أفئدة» على نبرة؟", options: ["لأنها مكسورة", "لأنها ساكنة", "لأن ما قبلها مفتوح", "لأن ما قبلها مكسور"], correct: 0 },
+            { q: "أي الكلمات الآتية تحوي همزة مكسورة ما قبلها مفتوح؟", options: ["رئيس", "قائل", "سئل", "أسئلة"], correct: 0 },
+            { q: "ما الكلمة التي تماثل كلمة «امرأة» في سبب رسم همزتها على ألف؟", options: ["مسألة", "فجأة", "فأس", "رأى"], correct: 1 },
+            { q: "ما الكلمة التي تماثل كلمة «رؤيا» في سبب رسم همزتها على واو؟", options: ["حياؤه", "بؤس", "خطؤه", "تؤجل"], correct: 1 },
+            { q: "إذا اتصل الاسم المنتهي بالتاء المربوطة بضمير، فإن التاء:", options: ["تَبْقَى تاء مربوطة", "تُرسم مفتوحةً", "تُقلب هاء مربوطة", "تُحذف من آخر الاسم"], correct: 1 },
+            { q: "يُحيي المطرب الحفل الفني. عند تحويل الفعل إلى الماضي يكتب:", options: ["حَيَا", "أحيى", "أحيا", "حَيَّ"], correct: 2 },
+            { q: "أي الكلمات الآتية تنتهي بواو أصلية؟", options: ["يصبو", "معلمون", "يسارعون", "لم يرضوا"], correct: 0 },
+            { q: "ما نوع اللام في الكلمات: الوقت، الرحمة، القلب، النجاة على الترتيب؟", options: ["شمسية، قمرية، شمسية، قمرية", "قمرية، شمسية، قمرية، شمسية", "شمسية، شمسية، قمرية، قمرية", "قمرية، قمرية، شمسية، شمسية"], correct: 1 },
+            { q: "عَيَّن عُمر بن الخطاب عمرو بن العاص والياً.. لماذا زيدت الواو في «عمرو»؟", options: ["لأنها غير منصوبة", "لأنها منونة", "لأنها منصوبة غير منونة", "لأنها مرفوعة"], correct: 0 },
+            { q: "المهمل دروسه لن يحقق النجاح. اسم الفاعل «المهمل» عَمِلَ عَمَل فعله لأنه:", options: ["اعتمد على نفي", "وقع حالاً", "معرف بـ «أل»", "اعتمد على استفهام"], correct: 2 },
+            { q: "يا فاعلاً الخير أبشر. اسم الفاعل «فاعلاً» عَمِل عَمَل فعله لأنه دل على الحال والاستقبال و:", options: ["وقع منادى", "اعتمد على نفي", "اعتمد على استفهام", "اعتمد على موصوف"], correct: 0 },
+            { q: "جنودنا قلوبهم ممتلئة بالشجاعة. اسم الفاعل «ممتلئة» مصوغ من فعل:", options: ["ثلاثي", "رباعي", "خماسي", "سداسي"], correct: 2 },
+            { q: "ما الفعل الذي اشتق منه اسم الفاعل «صافية»؟", options: ["صفى", "صافى", "وصف", "صفا"], correct: 3 },
+            { q: "صغ اسم الفاعل من الفعل «باع»:", options: ["مبيع", "بياع", "بائع", "مبياع"], correct: 2 },
+            { q: "إن تقوى الله زاد يعصم المؤمن. هات اسم الفاعل من الفعل الوارد:", options: ["مِعْصَم", "عاصم", "مَعَاصِم", "معصوم"], correct: 1 },
+            { q: "الإنسان الشريف يقظ ضميره. ما الذي اعتمدت عليه صيغة المبالغة لتعمل؟", options: ["نفي", "استفهام", "مبتدأ", "موصوف"], correct: 2 },
+            { q: "«القائد مقدام في المعركة». ما الفعل الذي اشتقت منه صيغة المبالغة؟", options: ["أَقْدَمَ", "تقدم", "قَدَّمَ", "قَدِمَ"], correct: 0 },
+            { q: "الطالب فهم دروسه شاكر معلميه. ما وزن صيغة المبالغة الواردة؟", options: ["فَعِل", "مِفْعال", "فاعل", "فَعَّال"], correct: 0 },
+            { q: "«الحسود لا يسود». حول صيغة المبالغة إلى اسم فاعل:", options: ["الحاسد لا يسود", "الحساد ليس بسائد", "الحسود غير سائد", "المحسود لا يسود"], correct: 0 },
+            { q: "الإنسان المخلص حقاً معوان لمن يصاحبه. هات اسم الفاعل من صيغة المبالغة:", options: ["عَائِن", "معاون", "مُعين", "معين"], correct: 2 },
+            { q: "ما الفعل الذي اشتق منه اسم المفعول «مستخرج»؟", options: ["أخرج", "استخرج", "استخرج (مبني للمجهول)", "خَرَجَ"], correct: 2 },
+            { q: "البضاعة المباعة لا ترد. ما تصويب كلمة «المباعة»؟", options: ["المبيوعة", "المبايعة", "المبتاعة", "المبيعة"], correct: 3 },
+            { q: "ما الجملة التي ورد فيها اسم المفعول من الفعل «دُعِيَ»؟", options: ["دافع المحامي عن المدعى عليه", "هذا الرجل مدعو إلى الحفل", "التقيت صديقي في مدعاة", "الجندي مستدعى"], correct: 1 },
+            { q: "الله هو المتوكل عليه في كل الأمور. حدد المحل الإعرابي لـ «عليه»:", options: ["في محل رفع نعت", "في محل رفع فاعل", "في محل رفع نائب فاعل", "في محل رفع خبر"], correct: 2 },
+            { q: "العمل الجديد منصرف إليه غدًا. على ماذا اعتمد اسم المفعول؟", options: ["استفهام", "نفي", "موصوف", "مبتدأ"], correct: 3 },
+            { q: "الأفعال الآتية لا يُصاغ منها اسم تفضيل، إلا فعلاً واحداً هو:", options: ["بئس", "فَنِيَ", "صار", "دَقَّ"], correct: 3 },
+            { q: "المخلصون أنفع لوطنهم من المتكاسلين. ما حالة اسم التفضيل؟", options: ["مضاف إلى معرفة", "مجرد من «أل» والإضافة", "مقترن بـ «أل»", "مضاف إلى نكرة"], correct: 1 },
+            { q: "الفرقتان المتصفتان بالروح الرياضية أفضلا فرقتين. الجملة التي لا تُعد تصويباً للخطأ هي:", options: ["الفرقتان هما الأفضل", "الفرقتان أفضلا الفرق", "الفرقتان أفضل الفرق", "الفرقتان أفضل فرقتين"], correct: 0 },
+            { q: "ما إعراب كلمة «العليا» في: برج خليفة ناطحة السحاب العليا؟", options: ["نعت مرفوع", "خبر مرفوع", "مبتدأ مرفوع", "نعت مجرور"], correct: 0 },
+            { q: "«الليل مرصد النجوم». «مرصد» مشتق من فعل ثلاثي، فما نوعه؟", options: ["اسم فاعل", "اسم زمان", "اسم مكان", "اسم مفعول"], correct: 1 },
+            { q: "الصَّدر موطن الأسرار. ما نوع المشتق؟", options: ["اسم مفعول", "اسم فاعل", "اسم مكان", "اسم زمان"], correct: 2 },
+            { q: "صغ اسم الآلة من الفعلين «طَحَنَ، فَتَحَ» على الترتيب:", options: ["مَطْحُون، فَاتح", "مِطْحَنَة، مِفْتَاح", "طَاحِن، فَتَّاح", "طَحْن، مَفْتُوح"], correct: 1 },
+            { q: "ما وزن اسم الآلة «مجهر»؟", options: ["مَفْعَل", "مِفْعَل", "مَفْعُول", "مِفْعَال"], correct: 1 },
+            { q: "ما أنواع أسماء الآلة: «سكين، شاكوش، محراث»؟", options: ["جامد، مشتق، مشتق", "مشتق، جامد، مشتق", "جامد، جامد، مشتق", "جامد، مشتق، جامد"], correct: 2 },
+            { q: "على أي الأوزان يأتي مصدر الفعل «أهدى»؟", options: ["فِعْلَة", "تَفْعِلَة", "إفْعَال", "مُفَاعَلَة"], correct: 2 },
+            { q: "للفعل «قاتل» مصدران، فما هما؟", options: ["قِتَال، مُقَاتَلَة", "مُقَاتَلَة، تَقَاتُل", "قَتْل، تَقَاتُل", "قَتْل، قِتَال"], correct: 0 },
+            { q: "ما مصدر الفعل الخماسي «تَقَدَّمَ»؟", options: ["تَقْدِمَة", "تَقَدُّم", "تَقَادُم", "تَقْدِيم"], correct: 1 },
+            { q: "أسفر الانفجاران عن خسائر. ما إعراب «الانفجاران»؟", options: ["نائب فاعل مرفوع", "فاعل مرفوع", "خبر مرفوع", "مبتدأ مؤخر مرفوع"], correct: 1 },
+            { q: "ما الجملة التي تحوي مصدراً مؤولاً؟", options: ["تعجبني مقولة: إن الجمال جمال العلم", "أحرص على زيارة أقاربي", "سرني أنك ناجح في عملك", "إنما الآمال تتحقق بالعمل"], correct: 2 },
+            { q: "عليك أن تُتقن عملك. ما المحل الإعرابي للمصدر المؤول؟", options: ["مبتدأ", "مفعول به", "فاعل", "اسم مجرور"], correct: 1 },
+            { q: "كلا الطالبين ناجحان. إعراب كلمة «كلا»:", options: ["توكيد معنوي مرفوع", "مبتدأ مرفوع بالضمة المقدرة", "مبتدأ مرفوع بالألف", "خبر مرفوع"], correct: 1 },
+            { q: "«لولا الله ما اهتدينا». إعراب لفظ الجلالة «الله»:", options: ["مبتدأ خبره محذوف وجوباً", "مبتدأ خبره محذوف جوازاً", "فاعل مرفوع", "خبر لمبتدأ محذوف"], correct: 0 },
+            { q: "«في التأني السلامة». حكم تقديم الخبر على المبتدأ:", options: ["واجب", "جائز", "ممتنع", "قليل"], correct: 1 },
+            { q: "«في المحكمة قضاتها». حكم تقديم الخبر هنا:", options: ["جائز", "واجب", "ممتنع", "شاذ"], correct: 1 },
+            { q: "«نعم الخلق الصدق». إعراب «الصدق» يجوز فيه:", options: ["مبتدأ مؤخر فقط", "خبر لمبتدأ محذوف فقط", "مبتدأ مؤخر أو خبر لمبتدأ محذوف", "فاعل مرفوع"], correct: 2 },
+            { q: "«لعمرك إنهم لفي سكرتهم يعمهون». المحذوف في الجملة:", options: ["المبتدأ وجوباً", "الخبر وجوباً", "الفاعل", "الخبر جوازاً"], correct: 1 },
+            { q: "«عسى الكرب الذي أمسينا فيه أن يكون وراءه فرج». حكم اقتران خبر «عسى» بـ(أن):", options: ["يقل", "يكثر", "يجب", "يمتنع"], correct: 1 },
+            { q: "«أوشك القطار أن يصل». خبر أوشك هنا:", options: ["مفرد", "جملة فعلية", "شبه جملة", "جملة اسمية"], correct: 1 },
+            { q: "«كاد المعلم أن يكون رسولا». كاد تدل على:", options: ["الرجاء", "الشروع", "المقاربة", "التمني"], correct: 2 },
+            { q: "«أخذ الطالب يذاكر». إعراب «الطالب»:", options: ["فاعل", "اسم أخذ مرفوع", "مفعول به", "مبتدأ"], correct: 1 },
+            { q: "«أخذ الطالب الكتاب». إعراب «الطالب»:", options: ["اسم أخذ مرفوع", "فاعل مرفوع", "مبتدأ", "خبر"], correct: 1 },
+            { q: "«إنما المؤمنون إخوة». إعراب «المؤمنون»:", options: ["اسم إن منصوب", "مبتدأ مرفوع", "خبر مرفوع", "فاعل مرفوع"], correct: 1 },
+            { q: "أي الجمل الآتية بها «لا» النافية للجنس عاملة؟", options: ["لا بيننا خائن", "لا الطالب مهمل ولا الطالبة", "لا إله إلا الله", "بلا شك سننتصر"], correct: 2 },
+            { q: "«لا طالب علم مقصر». نوع اسم لا:", options: ["مفرد", "مضاف", "شبيه بالمضاف", "معرفة"], correct: 1 },
+            { q: "«لا طالباً للعلم مقصر». اسم لا منصوب لأنه:", options: ["مضاف", "شبيه بالمضاف", "مفرد", "نكرة مقصودة"], correct: 1 },
+            { q: "الفعل «يُسعى» عند صوغ اسم الفاعل منه يصبح:", options: ["مَسْعيّ", "مُسْعَى", "سَاعٍ", "مُسَاعٍ"], correct: 2 },
+            { q: "«كن جميلاً ترى الوجود جميلاً». إعراب «جميلاً» الأولى:", options: ["حال منصوبة", "خبر كان منصوب", "مفعول به", "نعت"], correct: 1 },
+            { q: "«ظننتك فاهماً الدرس». المفعولان في الجملة هما:", options: ["التاء، فاهماً", "الكاف، فاهماً", "فاهماً، الدرس", "ظن، الكاف"], correct: 1 },
+            { q: "«والله لأذاكرن دروسي». الفعل المضارع هنا:", options: ["مرفوع", "منصوب", "مجزوم", "مبني على الفتح"], correct: 3 },
+            { q: "«الطالبات يذاكرن بجد». المضارع «يذاكرن» مبني على:", options: ["الفتح", "السكون", "الضم", "الكسر"], correct: 1 },
+            { q: "«متى تسعَ في الخير تنل محبة الناس». علامة جزم الفعلين:", options: ["حذف حرف العلة، السكون", "حذف حرف العلة، حذف النون", "السكون، السكون", "السكون، حذف حرف العلة"], correct: 0 },
+            { q: "أي الجمل الآتية تحتوي على مصدر صناعي؟", options: ["الوطنية شعور جميل", "هذه فتاة مصرية", "التربية السليمة أساس النجاح", "الأعمال اليدوية متقنة"], correct: 0 },
+            { q: "«التربية» مصدر لفعل:", options: ["ثلاثي", "رباعي", "خماسي", "سداسي"], correct: 1 },
+            { q: "المصدر الميمي من الفعل «وعد»:", options: ["مَوْعِد", "مَوْعَد", "مِيعَاد", "مُوَاعَدَة"], correct: 0 },
+            { q: "«مستقبل الضيوف في الصباح». نوع المشتق «مستقبل»:", options: ["اسم فاعل", "اسم زمان", "اسم مكان", "مصدر ميمي"], correct: 1 },
+            { q: "المصدر الصريح للفعل «استفاد»:", options: ["إفادة", "استفادة", "مفيدة", "استيفاد"], correct: 1 },
+            { q: "أي الجمل الآتية تحوي اسم تفضيل؟", options: ["ما أحسن السماء!", "محمد أحسن من أحمد", "أحسنْ إلى الناس", "أحسن الرجل عمله"], correct: 1 },
+            { q: "«الطلاب كلاهما مجتهد». هذه الجملة:", options: ["صحيحة نحوياً", "خاطئة، الصواب: كلاهما مجتهدان", "خاطئة، الصواب: الطالبان كلاهما مجتهد", "صحيحة لأن كلاهما توكيد"], correct: 2 },
+            { q: "«احرصوا على الموت توهب لكم الحياة». إعراب «توهب»:", options: ["مرفوع وعلامة رفعه الضمة", "منصوب بعد فاء السببية", "مجزوم في جواب الطلب", "مبني على السكون"], correct: 2 },
+            { q: "«يا طالباً، اجتهد». نوع المنادى:", options: ["نكرة غير مقصودة", "نكرة مقصودة", "مضاف", "شبيه بالمضاف"], correct: 0 },
+            { q: "«يا محمدون، اجتهدوا». إعراب «محمدون»:", options: ["منادى منصوب بالفتحة", "منادى مبني على الواو في محل نصب", "منادى مرفوع بالواو", "مبتدأ مرفوع"], correct: 1 },
+            { q: "«كم من بطل ضحى من أجل الوطن». نوع كم:", options: ["استفهامية", "خبرية", "تعجبية", "موصولة"], correct: 1 },
+            { q: "تمييز «كم» الاستفهامية يكون:", options: ["مفرداً مجروراً", "جمعاً مجروراً", "مفرداً منصوباً", "مرفوعاً"], correct: 2 },
+            { q: "قرأت «11» قصة. التمييز الصحيح هو:", options: ["إحدى عشرة قصةً", "أحد عشر قصةً", "إحدى عشر قصةً", "إحدى عشرة قصصٍ"], correct: 0 },
+            { q: "عندي «15» كتاباً. الكتابة الصحيحة للرقم:", options: ["خمسة عشر", "خمس عشرة", "خمسة عشرة", "خمس عشر"], correct: 0 },
+            { q: "اشترك في المسابقة «22» طالباً. الكتابة الصحيحة:", options: ["اثنان وعشرون", "اثنين وعشرين", "اثنتان وعشرون", "اثنتين وعشرين"], correct: 0 },
+            { q: "«بئس صفةً الكذب». إعراب «صفةً»:", options: ["فاعل", "مفعول به", "تمييز", "حال"], correct: 2 },
+            { q: "الاسم المنقوص من بين الكلمات الآتية:", options: ["القاضي", "الهدى", "مصطفى", "السماء"], correct: 0 },
+            { q: "تثنية كلمة «العصا»:", options: ["العصيان", "العصوان", "العصاءان", "العصاتان"], correct: 1 },
+            { q: "تثنية كلمة «صحراء»:", options: ["صحراءان", "صحراوان", "صحرايات", "صحاري"], correct: 1 },
+            { q: "«إنما يتذكر أولو الألباب». كلمة «أولو»:", options: ["جمع مذكر سالم", "ملحق بجمع المذكر السالم", "جمع تكسير", "اسم إشارة"], correct: 1 },
+            { q: "من الملحقات بالمثنى كلمة:", options: ["عالمون", "أولات", "كلا (مضافة لضمير)", "سنون"], correct: 2 },
+            { q: "«لا تقصر في عملك فتندم». الفاء هنا:", options: ["فاء العطف", "فاء السببية", "فاء الجزاء", "فاء الاستئناف"], correct: 1 },
+            { q: "«إن تذاكر فسوف تنجح». سبب اقتران جواب الشرط بالفاء:", options: ["جملة اسمية", "جملة طلبية", "مسبوقة بـ (سوف)", "فعلها جامد"], correct: 2 },
+            { q: "«من يجتهد فالنجاح حليفه». سبب الاقتران بالفاء:", options: ["جملة فعلية", "جملة اسمية", "فعلها طلبي", "مسبوقة بقد"], correct: 1 },
+            { q: "الفعل المضارع ينصب إذا سُبق بـ:", options: ["لم", "لا الناهية", "كي", "إن"], correct: 2 },
+            { q: "«ما كان المسلم ليكذب». اللام هنا:", options: ["لام التعليل", "لام الجحود", "لام الأمر", "لام القسم"], correct: 1 },
+            { q: "«لتكتبن الدرس يا علي». حكم توكيد الفعل بالنون:", options: ["واجب", "جائز", "ممتنع", "شاذ"], correct: 1 },
+            { q: "«والله لسوف أنجح». حكم التوكيد بالنون:", options: ["واجب", "جائز", "ممتنع (لوجود فاصل)", "ممتنع (لأنه منفي)"], correct: 2 },
+            { q: "المصدر المؤول في «يسرني أن تنجح» في محل:", options: ["نصب مفعول به", "رفع فاعل", "جر مضاف إليه", "رفع مبتدأ"], correct: 1 },
+            { q: "«استيقظت وطلوع الشمس». الواو هنا:", options: ["واو العطف", "واو الحال", "واو المعية", "واو القسم"], correct: 2 },
+            { q: "إعراب كلمة «طلوع» في (استيقظت وطلوع الشمس):", options: ["مفعول به منصوب", "مفعول معه منصوب", "حال منصوبة", "مبتدأ مرفوع"], correct: 1 },
+            { q: "«ذاكرت والضوء خافت». الواو هنا:", options: ["واو العطف", "واو المعية", "واو الحال", "واو الاستئناف"], correct: 2 },
+            { q: "«احترم الناس خصوصاً العلماء». إعراب «العلماء»:", options: ["مضاف إليه", "مفعول به", "بدل", "نعت"], correct: 1 },
+            { q: "«أحب الطلاب وبخاصة المتفوقون». إعراب «المتفوقون»:", options: ["مبتدأ مؤخر مرفوع", "مفعول به منصوب", "مضاف إليه", "فاعل مرفوع"], correct: 0 },
+            { q: "المستثنى بـ (غير) أو (سوى) يعرب دائماً:", options: ["مستثنى منصوب", "بدل", "مضاف إليه مجرور", "فاعل"], correct: 2 },
+            { q: "«ما حضر الطلاب إلا طالبٌ». إعراب «طالب»:", options: ["مستثنى منصوب فقط", "مضاف إليه", "مستثنى منصوب أو بدل مرفوع", "فاعل مرفوع"], correct: 2 },
+            { q: "«ما حضر إلا طالب». إعراب «طالب»:", options: ["بدل مرفوع", "مستثنى منصوب", "فاعل مرفوع", "مضاف إليه"], correct: 2 },
+            { q: "أي الكلمات الآتية ممنوعة من الصرف لسبب واحد؟", options: ["أحمد", "مساجد", "عمر", "عطشان"], correct: 1 },
+            { q: "أي الكلمات ممنوعة من الصرف لسببين (عَلَم وأعجمي)؟", options: ["إبراهيم", "مكة", "صحراء", "مبادئ"], correct: 0 },
+            { q: "الممنوع من الصرف يُجر بـ:", options: ["الكسرة دائماً", "الفتحة إذا كان مجرداً من (أل) والإضافة", "الفتحة دائماً", "الياء"], correct: 1 },
+            { q: "«صليت في مساجدَ كثيرة». إعراب مساجد:", options: ["اسم مجرور بالكسرة", "اسم مجرور بالفتحة", "مضاف إليه", "ظرف مكان"], correct: 1 },
+            { q: "«صليت في المساجدِ الأثرية». إعراب المساجد:", options: ["اسم مجرور بالفتحة", "اسم مجرور بالكسرة", "بدل مجرور", "مفعول به"], correct: 1 },
+            { q: "«هذا طالب أخلاقه كريمة». الجملة (أخلاقه كريمة) في محل:", options: ["نصب حال", "رفع نعت", "رفع خبر ثانٍ", "جر مضاف إليه"], correct: 1 },
+            { q: "«رأيت الطالب يبتسم». الجملة (يبتسم) في محل:", options: ["رفع نعت", "نصب حال", "نصب مفعول به", "جر مضاف إليه"], correct: 1 },
+            { q: "الجمل بعد المعارف أحوال، وبعد النكرات:", options: ["أخبار", "صفات (نعوت)", "أحوال أيضاً", "مضاف إليه"], correct: 1 },
+            { q: "«سرني ما فعلت». «ما» هنا:", options: ["نافية", "استفهامية", "موصولة", "تعجبية"], correct: 2 },
+            { q: "«بئس ما تتصف به الكذب». فاعل بئس هنا هو:", options: ["ضمير مستتر", "الكذب", "الاسم الموصول (ما)", "التاء"], correct: 2 },
+            { q: "«نِعْمَ رجلاً المخلص». فاعل نعم هو:", options: ["رجلاً", "المخلص", "ضمير مستتر", "محذوف"], correct: 2 },
+            { q: "حبذا الأمانة. إعراب الأمانة:", options: ["مبتدأ مؤخر وجوباً", "مبتدأ مؤخر جوازاً", "خبر لمبتدأ محذوف", "فاعل مرفوع"], correct: 0 },
+            { q: "لا حبذا الخيانة. المخصوص بالذم لا يجوز أن يتقدم على (حبذا).", options: ["العبارة صحيحة", "العبارة خاطئة", "يجوز في حالة واحدة", "لا توجد إجابة"], correct: 0 },
+            { q: "«نحن -العرب- نكرم الضيف». إعراب «العرب»:", options: ["مبتدأ ثانٍ", "خبر", "مفعول به لفعل محذوف تقديره أخص", "نعت"], correct: 2 },
+            { q: "أسلوب الاختصاص يبدأ بـ:", options: ["أداة نداء", "أداة تعجب", "أداة استفهام", "ضمير متكلم أو مخاطب"], correct: 3 },
+            { q: "«أعظم بالصدق». الباء في (بالصدق):", options: ["حرف جر أصلي", "حرف جر زائد", "حرف جر شبيه بالزائد", "حرف عطف"], correct: 1 },
+            { q: "إعراب «الصدق» في (أعظم بالصدق):", options: ["فاعل مجرور لفظاً مرفوع محلاً", "مفعول به", "اسم مجرور", "مبتدأ"], correct: 0 },
+            { q: "«ما أعظم الصدق». إعراب «الصدق»:", options: ["فاعل", "مبتدأ", "مفعول به منصوب", "خبر"], correct: 2 },
+            { q: "كلمة (أعظم) في التعجب (ما أعظم الصدق) هي:", options: ["اسم تفضيل", "فعل ماضٍ جامد", "فعل مضارع", "فعل أمر"], correct: 1 },
+            { q: "اسم الفعل (هيهات) معناه:", options: ["افترق", "بَعُدَ", "اسكت", "أتضجر"], correct: 1 },
+            { q: "اسم الفعل (أفٍ) معناه:", options: ["أتضجر", "أتوجع", "أعجب", "أستجيب"], correct: 0 },
+            { q: "اسم الفعل (آمين) نوعه:", options: ["اسم فعل ماض", "اسم فعل مضارع", "اسم فعل أمر", "ليس اسم فعل"], correct: 2 },
+            { q: "اسم الفعل (شتان) نوعه:", options: ["اسم فعل ماض", "اسم فعل أمر", "اسم فعل مضارع", "حرف جر"], correct: 0 },
+            { q: "كلمة «يوم» تعرب ظرف زمان منصوب في:", options: ["يومُ الجمعة مبارك", "سأسافر يومَ الخميس", "جاء يومُ النصر", "هذا يومُ عظيم"], correct: 1 },
+            { q: "«حضر الطالبان كلاهما». إذا أردنا جعل (كلاهما) فاعلاً نقول:", options: ["الطالبان كلاهما حضرا", "حضر كلاهما الطالبان", "حضر كلا الطالبين", "كلا الطالبين حضرا"], correct: 2 },
+            { q: "«كلا الطالبين ناجح». إعراب «كلا»:", options: ["مبتدأ مرفوع بالضمة المقدرة", "مبتدأ مرفوع بالألف", "توكيد معنوي مرفوع", "مضاف إليه"], correct: 0 },
+            { q: "نائب الفاعل في جملة «شُوهِدَت المباراة»:", options: ["التاء", "ضمير مستتر", "المباراة", "محذوف"], correct: 2 },
+            { q: "«مُنِح المتفوق جائزة». إعراب (جائزة):", options: ["نائب فاعل", "مفعول به ثانٍ منصوب", "حال", "تمييز"], correct: 1 },
+            { q: "عند بناء الفعل (قال) للمجهول يصبح:", options: ["يُقال", "قِيلَ", "قَوْلٌ", "قَوَلَ"], correct: 1 },
+            { q: "عند بناء الفعل (باع) للمجهول يصبح:", options: ["بِيعَ", "يُبَاع", "بُوعَ", "بِيعَت"], correct: 0 },
+            { q: "الفعل الذي يلزم البناء للمجهول لفظاً لا معنى:", options: ["شُرِبَ", "فُهِمَ", "حُمَّ", "أُكِلَ"], correct: 2 },
+            { q: "الاسم المرفوع بعد الأفعال (حُمَّ، جُنَّ، غُمَّ) يُعرب:", options: ["نائب فاعل", "فاعلاً", "مبتدأ", "مفعولاً به"], correct: 1 },
+            { q: "الاسم المرفوع بعد الأفعال (تُوفِّيَ، اسْتُشْهِدَ) يُعرب:", options: ["فاعلاً", "مبتدأ", "نائب فاعل", "خبراً"], correct: 2 },
+            { q: "«كم كتاباً قرأت؟». نوع كم:", options: ["خبرية", "استفهامية", "تعجبية", "موصولة"], correct: 1 },
+            { q: "«طابت الإسكندرية هواءً». إعراب هواءً:", options: ["حال", "مفعول لأجله", "تمييز منصوب", "مفعول به"], correct: 2 },
+            { q: "«ازداد المسلم إيماناً». إعراب إيماناً:", options: ["مفعول به", "مفعول مطلق", "حال", "تمييز ملحوظ"], correct: 3 },
+            { q: "الاسم الممدود من بين الكلمات الآتية:", options: ["دعاء", "يسعى", "هدى", "مصطفى"], correct: 0 },
+            { q: "عند جمع كلمة «إنشاء» جمعاً سالماً:", options: ["إنشاوات", "إنشاءات", "إنشائات", "أناشئ"], correct: 1 },
+            { q: "لأن همزة «إنشاء» نوعها:", options: ["أصلية", "منقلبة عن أصل", "مزيد للتأنيث", "زائدة"], correct: 0 },
+            { q: "عند جمع كلمة «سماء» جمعاً سالماً، يجوز أن نقول:", options: ["سماءات فقط", "سماوات فقط", "سماءات وسماوات", "أسمية"], correct: 2 },
+            { q: "الهمزة في «صحراء» نوعها:", options: ["أصلية", "مزيدة للتأنيث", "منقلبة عن أصل واو", "منقلبة عن أصل ياء"], correct: 1 },
+            { q: "اسم المرة من الفعل (دعا):", options: ["دعوة", "دعاءً", "مَدْعاة", "دعوات"], correct: 0 },
+            { q: "اسم الهيئة من الفعل (جلس):", options: ["جَلْسَة", "جِلْسَة", "جلوساً", "مجلس"], correct: 1 },
+            { q: "نكشف في المعجم عن كلمة «استطاع» في مادة:", options: ["ط و ع", "ط ي ع", "ص ط ع", "س ط ع"], correct: 0 },
+            { q: "نكشف عن كلمة «الاتصاف» في مادة:", options: ["ص ف ف", "و ص ف", "ت ص ف", "ص ي ف"], correct: 1 },
+            { q: "نكشف عن كلمة «ميناء» في مادة:", options: ["م ي ن", "م و ن", "و ن ي", "ن و ي"], correct: 2 },
+            { q: "«إياك والكذب». هذا الأسلوب يسمى:", options: ["أسلوب إغراء", "أسلوب تحذير", "أسلوب اختصاص", "أسلوب مدح"], correct: 1 },
+            { q: "«الصلاة الصلاة». إعراب (الصلاة) الأولى:", options: ["مبتدأ مرفوع", "مفعول به لفعل محذوف وجوباً", "توكيد لفظي", "خبر مرفوع"], correct: 1 },
+            { q: "إعراب (الصلاة) الثانية في الجملة السابقة:", options: ["توكيد معنوي", "توكيد لفظي منصوب", "مبتدأ ثان", "بدل"], correct: 1 },
+            { q: "أي الأسماء الآتية من الأسماء الخمسة؟", options: ["أبي (مضافة للياء)", "آباء", "أخوك", "أخوان"], correct: 2 },
+            { q: "الأسماء الخمسة ترفع بـ:", options: ["الضمة", "الألف", "الواو", "ثبوت النون"], correct: 2 },
+            { q: "«إن أخاك كريم». أخاك تعرب:", options: ["اسم إن منصوب بالفتحة", "اسم إن منصوب بالألف", "خبر إن", "مبتدأ"], correct: 1 },
+            { q: "الفعل المضارع المعتل الآخر يجزم بـ:", options: ["السكون", "حذف حرف العلة", "حذف النون", "الفتحة"], correct: 1 }
+        ];
+
+        // متغيرات الحالة (State)
+        let gameState = 'intro'; // intro, exam, result, answerKey
+        let questions = [];
+        let userAnswers = {};
+        let score = 0;
+        let highestScore = 0;
+
+        // دالة خلط وتحديد 60 سؤال فقط
+        function getRandomQuestions() {
+            const shuffled = [...questionBank].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 60);
+        }
+
+        // تحديث واجهة المستخدم بناءً على الحالة
+        function render() {
+            const mainContent = document.getElementById('main-content');
+            const headerScore = document.getElementById('header-score');
+            const headerHighestScore = document.getElementById('header-highest-score');
+
+            // تحديث الهيدر
+            if (highestScore > 0) {
+                headerScore.classList.remove('hidden');
+                headerHighestScore.innerText = highestScore;
+            } else {
+                headerScore.classList.add('hidden');
+            }
+
+            // تحديث المحتوى الرئيسي
+            if (gameState === 'intro') {
+                mainContent.innerHTML = renderIntro();
+            } else if (gameState === 'exam') {
+                mainContent.innerHTML = renderExam();
+            } else if (gameState === 'result') {
+                mainContent.innerHTML = renderResult();
+            } else if (gameState === 'answerKey') {
+                mainContent.innerHTML = renderAnswerKey();
+            }
+
+            // تفعيل أيقونات Lucide
+            lucide.createIcons();
+            window.scrollTo(0, 0);
+        }
+
+        function setGameState(state) {
+            gameState = state;
+            render();
+        }
+
+        function startExam() {
+            questions = getRandomQuestions();
+            userAnswers = {};
+            score = 0;
+            setGameState('exam');
+        }
+
+        function handleAnswerSelect(qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            
+            // تحديث تصميم الخيارات عبر الـ DOM لعدم عمل إعادة تحميل كاملة للشاشة وفقدان موقع التمرير (Scroll)
+            const bubbleLabels = ['أ', 'ب', 'ج', 'د'];
+            const labels = document.querySelectorAll(`label[data-qindex="${qIndex}"]`);
+            
+            labels.forEach((label, idx) => {
+                const input = label.querySelector('input');
+                const bubble = label.querySelector('.bubble');
+                const text = label.querySelector('.opt-text');
+
+                if (idx === optIndex) {
+                    label.className = "flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all border-2 border-indigo-600 bg-indigo-50 shadow-md transform scale-[1.01]";
+                    input.checked = true;
+                    bubble.className = "bubble w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 font-bold text-lg transition-colors shadow-sm bg-indigo-600 border-indigo-600 text-white";
+                    text.className = "opt-text text-base font-semibold select-none text-indigo-900";
+                } else {
+                    label.className = "flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all border-2 border-slate-200 hover:border-indigo-300 hover:bg-slate-50";
+                    input.checked = false;
+                    bubble.className = "bubble w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 font-bold text-lg transition-colors shadow-sm border-slate-300 text-slate-500 bg-white";
+                    text.className = "opt-text text-base font-semibold select-none text-slate-700";
+                }
+            });
+
+            // تحديث العداد
+            document.getElementById('answered-count').innerText = Object.keys(userAnswers).length;
+        }
+
+        function submitExam() {
+            if(Object.keys(userAnswers).length < 60) {
+               if(!window.confirm('لم تقم بالإجابة على جميع الـ 60 سؤالاً، هل أنت متأكد من رغبتك في إنهاء الامتحان؟')) return;
+            }
+            let correctAnswers = 0;
+            questions.forEach((q, index) => {
+                if (userAnswers[index] === q.correct) correctAnswers++;
+            });
+            const finalPercentage = Math.round((correctAnswers / questions.length) * 100);
+            score = finalPercentage;
+            if (finalPercentage > highestScore) highestScore = finalPercentage;
+            setGameState('result');
+        }
+
+        function viewAnswerKey() {
+            if (highestScore >= 70) {
+                setGameState('answerKey');
+            } else {
+                alert('عذراً، نموذج الإجابة مغلق 🔒. يجب أن تتخطى 70% على الأقل لفتح جزء من الإجابات!');
+            }
+        }
+
+        // قوالب واجهة المستخدم
+        function renderIntro() {
+            return `
+            <div class="flex flex-col items-center justify-center min-h-[75vh] text-center space-y-6 animate-fade-in">
+                <div class="bg-indigo-100 p-6 rounded-full mb-4 shadow-xl border-4 border-indigo-50">
+                    <i data-lucide="award" style="width: 80px; height: 80px;" class="text-indigo-600"></i>
+                </div>
+                <h1 class="text-5xl font-extrabold text-slate-800 tracking-tight">منصة <span class="text-indigo-600">لغتي العربية</span></h1>
+                <p class="text-lg text-slate-600 max-w-2xl leading-relaxed mt-4">
+                    تحدَّ نفسك في النحو الشامل للثانوية العامة! بنك أسئلة يحتوي على <span class="font-bold text-indigo-600">160 سؤالاً</span>، سيتم اختيار 60 منها عشوائياً في كل محاولة.
+                    <br/><br/>
+                    <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-md text-sm font-bold">تنبيه نظام الإجابات:</span> 
+                    &nbsp;أقل من 70% (مغلق) 🔒 | 70% - 79% (يفتح 50%) 🔓 | 80%+ (يفتح بالكامل) ✅
+                </p>
+                <button onclick="startExam()" class="mt-8 px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-bold text-xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 flex items-center gap-2">
+                    ابدأ الامتحان الآن <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                </button>
+            </div>`;
+        }
+
+        function renderExam() {
+            const bubbleLabels = ['أ', 'ب', 'ج', 'د'];
+            let html = `
+            <div class="max-w-4xl mx-auto w-full animate-fade-in">
+                <div class="sticky top-[64px] bg-white/95 backdrop-blur-md z-10 py-4 mb-6 border-b border-slate-200 flex justify-between items-center px-6 rounded-b-2xl shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-800">امتحان النحو الشامل</h2>
+                    <div class="text-indigo-600 font-bold bg-indigo-50 px-5 py-2 rounded-full border border-indigo-100">
+                        أجبت على: <span id="answered-count">${Object.keys(userAnswers).length}</span> / 60
+                    </div>
+                </div>
+                <div class="space-y-6 px-2 pb-24">
+            `;
+
+            questions.forEach((q, qIndex) => {
+                html += `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <h3 class="text-xl font-bold text-slate-800 mb-5 leading-relaxed flex items-start gap-3">
+                        <span class="bg-indigo-100 text-indigo-700 w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-base shadow-inner">
+                            ${qIndex + 1}
+                        </span>
+                        <span class="mt-1">${q.q}</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                `;
+                q.options.forEach((opt, optIndex) => {
+                    const isSelected = userAnswers[qIndex] === optIndex;
+                    html += `
+                        <label data-qindex="${qIndex}" onclick="handleAnswerSelect(${qIndex}, ${optIndex})" 
+                               class="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all border-2 ${isSelected ? 'border-indigo-600 bg-indigo-50 shadow-md transform scale-[1.01]' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'}">
+                            <input type="radio" name="question-${qIndex}" class="sr-only" ${isSelected ? 'checked' : ''}>
+                            <div class="bubble w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 font-bold text-lg transition-colors shadow-sm ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 text-slate-500 bg-white'}">
+                                ${bubbleLabels[optIndex]}
+                            </div>
+                            <span class="opt-text text-base font-semibold select-none ${isSelected ? 'text-indigo-900' : 'text-slate-700'}">
+                                ${opt}
+                            </span>
+                        </label>
+                    `;
+                });
+                html += `</div></div>`;
+            });
+
+            html += `
+                </div>
+                <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex justify-center shadow-[0_-15px_40px_rgba(0,0,0,0.06)] z-20">
+                    <button onclick="submitExam()" class="px-14 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-extrabold text-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center gap-3">
+                        <i data-lucide="check-circle" class="w-6 h-6"></i> إنهاء الامتحان واعتماد النتيجة
+                    </button>
+                </div>
+            </div>`;
+            return html;
+        }
+
+        function renderResult() {
+            let statusText = "";
+            let statusColor = "";
+            let circleGradient = "";
+            
+            if (score >= 80) { 
+                statusText = "ممتاز! تم فتح نموذج الإجابة بالكامل."; 
+                statusColor = "text-emerald-600";
+                circleGradient = `conic-gradient(#059669 ${score}%, #f1f5f9 ${score}%)`;
+            } else if (score >= 70) { 
+                statusText = "جيد جداً! تم فتح 50% من نموذج الإجابة."; 
+                statusColor = "text-indigo-600";
+                circleGradient = `conic-gradient(#4f46e5 ${score}%, #f1f5f9 ${score}%)`;
+            } else { 
+                statusText = "حاول مرة أخرى لتتخطى 70% وتفتح الإجابات."; 
+                statusColor = "text-rose-600";
+                circleGradient = `conic-gradient(#e11d48 ${score}%, #f1f5f9 ${score}%)`;
+            }
+
+            let btnClass = "";
+            let btnIcon = "";
+            let btnText = "";
+
+            if (highestScore >= 80) {
+                btnClass = 'bg-emerald-50 border-emerald-500 text-emerald-700 hover:bg-emerald-100';
+                btnIcon = '<i data-lucide="unlock" class="w-5 h-5"></i>';
+                btnText = "نموذج الإجابة الشامل";
+            } else if (highestScore >= 70) {
+                btnClass = 'bg-indigo-50 border-indigo-400 text-indigo-700 hover:bg-indigo-100';
+                btnIcon = '<i data-lucide="unlock" class="w-5 h-5 opacity-70"></i>';
+                btnText = "نموذج الإجابة (50%)";
+            } else {
+                btnClass = 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed';
+                btnIcon = '<i data-lucide="lock" class="w-5 h-5"></i>';
+                btnText = "نموذج الإجابة (مغلق)";
+            }
+
+            return `
+            <div class="max-w-2xl mx-auto w-full pb-16 animate-fade-in mt-10">
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-xl text-center border border-slate-100">
+                    <div class="inline-flex items-center justify-center w-40 h-40 rounded-full mb-8 shadow-inner relative"
+                         style="background: ${circleGradient};">
+                        <div class="absolute inset-3 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
+                            <span class="text-5xl font-black ${statusColor}">
+                                ${score}%
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <h2 class="text-3xl font-extrabold mb-3 ${statusColor}">${statusText}</h2>
+                    <p class="text-slate-500 font-medium text-lg mb-10">أعلى نتيجة حققتها حتى الآن هي: <span class="font-bold text-slate-800">${highestScore}%</span></p>
+                    
+                    <div class="flex flex-col sm:flex-row justify-center gap-4 w-full">
+                        <button onclick="startExam()" class="flex-1 py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors shadow-md text-lg">
+                            <i data-lucide="refresh-ccw" class="w-5 h-5"></i> امتحان جديد (60 سؤال)
+                        </button>
+                        
+                        <button onclick="viewAnswerKey()" class="flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all border-2 text-lg shadow-sm ${btnClass}">
+                            ${btnIcon} ${btnText}
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderAnswerKey() {
+            const displayCount = highestScore >= 80 ? 60 : (highestScore >= 70 ? 30 : 0);
+            const displayedQuestions = questions.slice(0, displayCount);
+            const bubbleLabels = ['أ', 'ب', 'ج', 'د'];
+            
+            let html = `
+            <div class="max-w-4xl mx-auto w-full pb-16 animate-fade-in">
+                <div class="rounded-3xl p-8 text-white mb-8 shadow-xl relative overflow-hidden mt-6 
+                    ${highestScore >= 80 ? 'bg-gradient-to-l from-emerald-500 to-teal-600' : 'bg-gradient-to-l from-indigo-500 to-blue-600'}">
+                    <i data-lucide="unlock" class="absolute -left-10 -top-10 text-white/10 w-64 h-64"></i>
+                    <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <h2 class="text-3xl font-black mb-2 flex items-center gap-3">
+                                <i data-lucide="award" class="w-8 h-8"></i> ${highestScore >= 80 ? "النموذج الشامل المفتوح" : "النموذج الجزئي (50%)"}
+                            </h2>
+                            <p class="text-white/90 text-lg font-medium">
+                                ${highestScore >= 80 ? "أحسنت! صلاحية كاملة لرؤية جميع إجاباتك." : "تم فتح 30 سؤالاً فقط. اجتهد في المحاولة القادمة للوصول لـ 80% وفتح الباقي!"}
+                            </p>
+                        </div>
+                        <button onclick="setGameState('result')" class="px-8 py-3 bg-white text-slate-800 hover:bg-slate-50 rounded-xl font-extrabold shadow-md transition-colors whitespace-nowrap">
+                            العودة للنتيجة
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-6">
+            `;
+
+            displayedQuestions.forEach((q, qIndex) => {
+                const userAnswer = userAnswers[qIndex];
+                const isCorrect = userAnswer === q.correct;
+                const isUnanswered = userAnswer === undefined;
+
+                html += `
+                <div class="p-6 rounded-2xl border-2 transition-colors ${isCorrect ? 'bg-emerald-50/40 border-emerald-200' : 'bg-rose-50/40 border-rose-200'}">
+                    <div class="flex items-start gap-4 mb-5">
+                        ${isCorrect 
+                            ? `<i data-lucide="check-circle" class="text-emerald-500 shrink-0 mt-1 w-7 h-7"></i>` 
+                            : `<i data-lucide="x-circle" class="text-rose-500 shrink-0 mt-1 w-7 h-7"></i>`
+                        }
+                        <h4 class="text-xl font-bold text-slate-800 leading-relaxed">
+                            <span class="text-slate-400 mr-1 text-base">${qIndex + 1}.</span> ${q.q}
+                        </h4>
+                    </div>
+                    <div class="mr-11 space-y-3 font-medium">
+                `;
+
+                if (!isCorrect && !isUnanswered) {
+                    html += `
+                        <div class="bg-rose-100 text-rose-900 p-4 rounded-xl border border-rose-200 flex items-start gap-4">
+                            <span class="font-extrabold shrink-0 bg-rose-500 text-white w-9 h-9 flex items-center justify-center rounded-full text-base shadow-sm">
+                                ${bubbleLabels[userAnswer]}
+                            </span>
+                            <div>
+                                <div class="text-sm font-black text-rose-700 mb-1 tracking-wide">إجابتك (خاطئة) ❌</div>
+                                <div class="text-lg">${q.options[userAnswer]}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (isUnanswered) {
+                    html += `
+                        <div class="bg-slate-100 text-slate-600 p-4 rounded-xl flex items-center gap-3 border border-slate-200">
+                            <i data-lucide="alert-circle" class="w-6 h-6 text-slate-400"></i> 
+                            <span class="text-lg font-semibold">لم تقم بالإجابة على هذا السؤال.</span>
+                        </div>
+                    `;
+                }
+
+                html += `
+                        <div class="p-4 rounded-xl flex items-start gap-4 border-2 ${isCorrect ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm mt-4 relative overflow-hidden'}">
+                            ${!isCorrect ? '<div class="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>' : ''}
+                            <span class="font-extrabold shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-base shadow-sm ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-emerald-500 text-white z-10'}">
+                                ${bubbleLabels[q.correct]}
+                            </span>
+                            <div class="z-10">
+                                <div class="text-sm font-black tracking-wide mb-1 ${isCorrect ? 'text-emerald-700' : 'text-emerald-800'}">
+                                    ${isCorrect ? 'إجابتك صحيحة ✅' : 'التصحيح ✅'}
+                                </div>
+                                <div class="text-lg font-bold">${q.options[q.correct]}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            html += `</div>`;
+
+            if (highestScore >= 70 && highestScore < 80) {
+                html += `
+                <div class="mt-8 bg-slate-800 text-white p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-3 shadow-lg">
+                    <i data-lucide="lock" class="w-8 h-8 text-amber-400"></i>
+                    <p class="text-lg font-bold">باقي الأسئلة الـ 30 مغلقة. ابدأ امتحاناً جديداً وحاول كسر حاجز الـ 80% لتفتحها جميعاً!</p>
+                    <button onclick="startExam()" class="mt-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black px-6 py-2 rounded-lg transition-colors">
+                        تحدَّ نفسك الآن
+                    </button>
+                </div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // تشغيل التطبيق مبدئياً
+        document.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
+
+    </script>
+</body>
+</html>
